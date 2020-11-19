@@ -3,24 +3,25 @@ import numpy as np
 import torch
 
 class Agent:
-    def __init__(self, gamma, epsilon, lr, in_features, batch_size, n_actions, 
-            mem_size=100_000, ep_min=0.01, ep_decay=5e-4, cuda=True):
+    def __init__(self, gamma, epsilon, lr, batch_size, mem_size=100_000, 
+            ep_min=0.01, ep_decay=5e-4, cuda=True):
         self.gamma = gamma
         self.epsilon = epsilon
         self.ep_min = ep_min
         self.ep_decay = ep_decay
-        self.action_space = [i for i in range(n_actions)]
+        self.n_actions = 4
+        self.action_space = [i for i in range(self.n_actions)]
         self.batch_size = batch_size
         self.mem_size = mem_size
         self.mem_cntr = 0
 
-        self.state_memory = np.empty((self.mem_size, in_features))
+        self.state_memory = np.empty((self.mem_size, 3, 210, 160))
         self.action_memory = np.empty(self.mem_size, dtype=np.int32)
         self.reward_memory = np.empty(self.mem_size)
-        self.next_state_memory = np.empty((self.mem_size, in_features))
+        self.next_state_memory = np.empty((self.mem_size, 3, 210, 160))
         self.done_memory = np.empty(self.mem_size, dtype=np.bool)
 
-        self.q_network = QNetwork(lr, in_features, 256, 256, n_actions, cuda)
+        self.q_network = QNetwork(lr, self.n_actions, cuda)
 
     def remember(self, state, action, reward, next_state, done):
         index = self.mem_cntr % self.mem_size
