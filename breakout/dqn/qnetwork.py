@@ -19,7 +19,7 @@ class QNetwork(nn.Module):
         self.device = torch.device('cuda:0' if torch.cuda.is_available() and cuda else 'cpu')
         self.to(self.device)
 
-        print(self, "\n", self.device, sep="")
+        print(self, "\nDevice: ", self.device, sep="")
 
     def forward(self, state):
         x = F.relu(self.conv1(state))

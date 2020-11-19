@@ -1,18 +1,13 @@
 import gym
+import time
 import argparse
 import numpy as np
-import matplotlib.pyplot as plt
 from collections import deque
 from agent import Agent
+from utils import plot_results, time_stamp
 
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-
-def plot_results(episodes, scores, filename):
-    plt.plot([i for i in range(episodes)], scores)
-    plt.xlabel("episodes")
-    plt.ylabel("mean scores")
-    plt.savefig(filename)
 
 def breakout(args):
     env = gym.make('Breakout-v0')
@@ -26,9 +21,11 @@ def breakout(args):
     scores = deque(maxlen=100)
     mean_scores = []
     solved = False
+    start_t = time.time()
 
     while not solved and episodes < n_games:
         score = 0
+        frames = 0
         done = False
         observation = env.reset()
         observation = observation.swapaxes(0, 2).swapaxes(1, 2)
@@ -43,7 +40,9 @@ def breakout(args):
             score += reward
             
             agent.remember(observation, action, reward, observation_, done)
-            agent.learn()
+
+            if frames != 0 and frames % 4 == 0:
+                agent.learn()
 
             observation = observation_
    
@@ -53,9 +52,9 @@ def breakout(args):
         mean_scores.append(mean_score)
         solved = mean_score > 40
 
-        print(f"episode: {episodes} - mean_score: {round(mean_score,1)} - prev_score: {score} - epsilon: {round(agent.epsilon,1)}   \r", end="")
+        print(f"episode: {episodes} - mean_score: {round(mean_score,1)} - time: {time_stamp(time.time()-start_t)}   \r", end="")
     
-    print(f"\nepisodes to solve environment: {episodes} - highscore: {max(scores)}")
+    print(f"\nepisodes to solve environment: {episodes} - highscore: {max(scores)} - {time_stamp(time.time()-start_t)}")
 
     if args.save:
         agent.save_model("/models/model")
