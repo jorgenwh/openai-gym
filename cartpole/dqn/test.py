@@ -1,6 +1,5 @@
 import numpy as np
 
-
 tensor = np.arange(1,13).reshape(6,2)
 rewards = np.zeros((6, 1))
 
@@ -17,4 +16,6 @@ print()
 print(mask)
 print()
 
-print(tensor[:,mask])
+a = np.zeros_like(tensor)
+a[mask] = rewards
+print(a)

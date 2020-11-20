@@ -19,7 +19,7 @@ if __name__ == "__main__":
         observation = env.reset()
         
         while not done:
-            env.render()
+            #env.render()
             action = agent.act(observation)
             observation_, reward, done, info = env.step(action)
             score += reward
