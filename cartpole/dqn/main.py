@@ -65,10 +65,10 @@ if __name__ == "__main__":
 
     parser.add_argument('-r', '--render', help="Render the game screen.", action='store_true')
     parser.add_argument('-ev', '--eval', help="Load and evaluate a model from the 'models/' folder.", type=str, default=None)
-    parser.add_argument('-s', '--save', help="Save the model under 'models/[name]' when it solves the environment.", type=str, default=None)
-    parser.add_argument('-pl', '--plot', help="The output filename for the plots. No plot will be created if left unspecified.", type=str, default=None)
+    parser.add_argument('-s', '--save', help="Save the model under 'models/[name]' when it solves the environment. This argument takes a name for the model.", type=str, default=None)
+    parser.add_argument('-pl', '--plot', help="Plot the average rewards for each episode. This argument takes filename for the plot file.", type=str, default=None)
     parser.add_argument('-cu', '--cuda', help="Whether to use cuda for the neural network.", action="store_true")
-    parser.add_argument('-max', '--maxgames', help="The maximum amount of games played before the training terminates.", type=int, default=np.inf)
+    parser.add_argument('-max', '--maxgames', help="The maximum amount of games played before termination.", type=int, default=np.inf)
 
     args = parser.parse_args()
     cartpole(args)

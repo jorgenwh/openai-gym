@@ -6,15 +6,11 @@ Run the script:
 
 The script can take the following arguments:
 
-    -h, --help          : show help message.
-    -r, --render        : render the game screen.
-    -f, --file          : the output filename for the plots. No plot will be created 
-                            if left unspecified.
-    -ep, --epsilon      : the starting epsilon value for the learning agent.
-    -de, --decay        : the epsilon decay factor.
-    -ga, --gamma        : the gamma (discount) factor.
-    -lr, --learnrate    : the learning rate for the neural network.
-    -b, --batch         : the batch size used during learning.
-    -mem, --memsize     : the agent memory size.
-    -cu, --cuda         : whether to use cuda for the neural network.
-    -max, --maxgames    : the maximum amount of games played before the training terminates.
+    -h, --help          : Show help message.
+    -r, --render        : Render the game screen.
+    -ev, --eval         : Load and evaluate a model from the 'models/' folder.
+    -s, --save          : Save the model under 'models/[name]' when it solves 
+                            the environment. This argument takes a name for the model.
+    -pl, --plot         : Plot the average rewards for each episode. This argument takes a                       filename for the plot file.
+    -cu, --cuda         : Whether to use cuda for the neural network.
+    -max, --maxgames    : The maximum amount of games played before termination.
