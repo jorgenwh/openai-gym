@@ -1,9 +1,10 @@
 from qnetwork import QNetwork
 import numpy as np
 import torch
+import os
 
 class Agent:
-    def __init__(self, gamma, epsilon, lr, in_features, batch_size, n_actions, 
+    def __init__(self, gamma, epsilon, lr, batch_size, n_actions, 
             mem_size=100_000, ep_min=0.01, ep_decay=5e-4, cuda=True):
         self.gamma = gamma
         self.epsilon = epsilon
@@ -14,13 +15,13 @@ class Agent:
         self.mem_size = mem_size
         self.mem_cntr = 0
 
-        self.state_memory = np.empty((self.mem_size, in_features))
+        self.state_memory = np.empty((self.mem_size, 4))
         self.action_memory = np.empty(self.mem_size, dtype=np.int32)
         self.reward_memory = np.empty(self.mem_size)
-        self.next_state_memory = np.empty((self.mem_size, in_features))
+        self.next_state_memory = np.empty((self.mem_size, 4))
         self.done_memory = np.empty(self.mem_size, dtype=np.bool)
 
-        self.q_network = QNetwork(lr, in_features, 256, 256, n_actions, cuda)
+        self.q_network = QNetwork(lr, 256, 256, n_actions, cuda)
 
     def remember(self, state, action, reward, next_state, done):
         index = self.mem_cntr % self.mem_size
@@ -70,4 +71,23 @@ class Agent:
         self.q_network.eval()
 
     def save_model(self, name):
-        torch.save(self.q_network.state_dict(), name)
+        folder = "models/"
+        if not os.path.exists(folder):
+            print(f"Cannot find folder '{folder}' when trying to save model.")
+            return
+
+        filename = folder + name
+        i = 1
+        while os.path.isfile(filename):
+            filename = folder + name + str(i)
+            i += 1
+
+        torch.save(self.q_network.state_dict(), filename)
+
+    def load_model(self, name):
+        folder = "models/"
+        if not (os.path.exists(folder) or os.path.isfile(folder + name)):
+            raise FileNotFoundError(f"Cannot find model '{folder + name}' when trying to load model.")
+
+        self.q_network.load_state_dict(torch.load(folder + name))
+        self.epsilon = self.ep_min = 0.0

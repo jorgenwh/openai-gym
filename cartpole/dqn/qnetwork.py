@@ -2,13 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import numpy as np
 
 class QNetwork(nn.Module):
-    def __init__(self, lr, in_features, fc1, fc2, n_actions, cuda):
+    def __init__(self, lr, fc1, fc2, n_actions, cuda):
         super(QNetwork, self).__init__()
-        
-        self.fc1 = nn.Linear(in_features, fc1)
+        self.fc1 = nn.Linear(4, fc1)
         self.fc2 = nn.Linear(fc1, fc2)
         self.fc3 = nn.Linear(fc2, n_actions)
 

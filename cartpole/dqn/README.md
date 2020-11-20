@@ -2,7 +2,7 @@ Solving the openai cartpole environment using a deep Q learning network.
 
 Run the script:
 
-    python cartpole.py
+    python main.py
 
 The script can take the following arguments:
 
