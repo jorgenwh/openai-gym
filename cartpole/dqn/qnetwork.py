@@ -5,7 +5,7 @@ import torch.optim as optim
 import numpy as np
 
 class QNetwork(nn.Module):
-    def __init__(self, lr, in_features, fc1, fc2, n_actions):
+    def __init__(self, lr, in_features, fc1, fc2, n_actions, cuda):
         super(QNetwork, self).__init__()
         
         self.fc1 = nn.Linear(in_features, fc1)
@@ -14,7 +14,7 @@ class QNetwork(nn.Module):
 
         self.optimizer = optim.Adam(self.parameters(), lr=lr)
         self.loss_function = nn.MSELoss()
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() and cuda else 'cpu')
         self.to(self.device)
 
     def forward(self, state):
