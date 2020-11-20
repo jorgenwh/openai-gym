@@ -4,8 +4,8 @@ import torch
 import os
 
 class Agent:
-    def __init__(self, gamma, epsilon, lr, batch_size, n_actions, 
-            mem_size=100_000, ep_min=0.01, ep_decay=5e-4, cuda=True):
+    def __init__(self, gamma, epsilon, ep_min, ep_decay, lr, 
+            batch_size, n_actions, mem_size, cuda):
         self.gamma = gamma
         self.epsilon = epsilon
         self.ep_min = ep_min

@@ -1,15 +1,16 @@
 from qnetwork import QNetwork
 import numpy as np
 import torch
+import os
 
 class Agent:
-    def __init__(self, gamma, epsilon, lr, batch_size, mem_size=100_000, 
-            ep_min=0.01, ep_decay=5e-4, cuda=True):
+    def __init__(self, gamma, epsilon, ep_min, ep_decay, lr, 
+            batch_size, n_actions, mem_size, cuda):
         self.gamma = gamma
         self.epsilon = epsilon
         self.ep_min = ep_min
         self.ep_decay = ep_decay
-        self.n_actions = 4
+        self.n_actions = n_actions
         self.action_space = [i for i in range(self.n_actions)]
         self.batch_size = batch_size
         self.mem_size = mem_size
@@ -71,4 +72,23 @@ class Agent:
         self.q_network.eval()
 
     def save_model(self, name):
-        torch.save(self.q_network.state_dict(), name)
+        folder = "models/"
+        if not os.path.exists(folder):
+            print(f"Cannot find folder '{folder}' when trying to save model.")
+            return
+
+        filename = folder + name
+        i = 1
+        while os.path.isfile(filename):
+            filename = folder + name + str(i)
+            i += 1
+
+        torch.save(self.q_network.state_dict(), filename)
+
+    def load_model(self, name):
+        folder = "models/"
+        if not (os.path.exists(folder) or os.path.isfile(folder + name)):
+            raise FileNotFoundError(f"Cannot find model '{folder + name}' when trying to load model.")
+
+        self.q_network.load_state_dict(torch.load(folder + name))
+        self.epsilon = self.ep_min = 0.0

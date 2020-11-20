@@ -11,8 +11,8 @@ class QNetwork(nn.Module):
         self.conv2 = nn.Conv2d(32, 64, kernel_size=4, stride=2)
         self.conv3 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
 
-        self.fc1 = nn.Linear(22528, 1024)
-        self.fc2 = nn.Linear(1024, n_actions)
+        self.fc1 = nn.Linear(64*22*16, 512)
+        self.fc2 = nn.Linear(512, n_actions)
         
         self.optimizer = optim.Adam(self.parameters(), lr=lr)
         self.loss_function = nn.MSELoss()

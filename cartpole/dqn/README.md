@@ -1,4 +1,4 @@
-Solving the openai cartpole environment using a deep Q learning network.
+Solving the openai-gym cartpole environment using a deep Q learning network.
 
 Run the script:
 
