@@ -11,7 +11,7 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 def breakout(args):
     env = gym.make('Breakout-v0')
-    agent = Agent(gamma=0.99, epsilon=1.0, ep_min=0.01, ep_decay=1.5e-4, 
+    agent = Agent(gamma=0.99, epsilon=1.0, ep_min=0.1, ep_decay=5e-4, 
                 lr=0.001, batch_size=64, n_actions=env.action_space.n, 
                 mem_size=5_000, cuda=args.cuda)
 
@@ -55,9 +55,9 @@ def breakout(args):
         mean_scores.append(mean_score)
         solved = mean_score > 40 and not args.eval
 
-        print(f"episode: {episodes} - mean_score: {round(mean_score,1)} - {time_stamp(time.time()-start_t)}   \r", end="")
+        print(f"episode: {episodes} - mean_score: {round(mean_score,1)} - eps: {round(agent.epsilon,1)} - {time_stamp(time.time()-t)}   \r", end="")
     
-    print(f"\nepisodes to solve environment: {episodes} - highscore: {max(scores)} - {time_stamp(time.time()-start_t)}")
+    print(f"\nepisodes to solve environment: {episodes} - highscore: {max(scores)} - {time_stamp(time.time()-t)}")
 
     if args.save:
         agent.save_model(args.save)
