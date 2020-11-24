@@ -1,63 +1,79 @@
 import gym
 import time
+import torch
 import argparse
 import numpy as np
 from collections import deque
 from agent import Agent
-from utils import plot_results, time_stamp
+from utils import plot_results, time_stamp, process_image, create_sequence
+
+import cv2
 
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 def breakout(args):
     env = gym.make('Breakout-v0')
-    agent = Agent(gamma=0.99, epsilon=1.0, ep_min=0.1, ep_decay=5e-4, 
-                lr=0.001, batch_size=64, n_actions=env.action_space.n, 
-                mem_size=5_000, cuda=args.cuda)
+    agent = Agent(gamma=0.99, epsilon=1.0, ep_min=0.05, ep_decay=4e-6, 
+                lr=0.00025, batch_size=1, n_actions=env.action_space.n, 
+                mem_size=20_000, cuda=args.cuda)
 
     if args.eval:
         agent.load_model(args.eval)
 
-    n_games = args.maxgames
     episodes = 0
+    frames = 0
     scores = deque(maxlen=25)
+    max_score = torch.Tensor([0])
     mean_scores = []
     solved = False
     t = time.time()
 
-    while not solved and episodes < n_games:
+    while not solved and episodes < args.maxeps:
         score = 0
-        frames = 0
-        done = False
+        frame = 0
+        terminal = False
+
         observation = env.reset()
-        observation = np.moveaxis(observation, 2, 0)
-        
-        while not done:
+        observation = process_image(observation)
+
+        history = deque([observation]*4, maxlen=4)
+        state_seq = create_sequence(history)
+
+        while not terminal:
             if args.render:
                 env.render()
 
-            action = agent.act(observation)
-            observation_, reward, done, _ = env.step(action)
-            observation_ = np.moveaxis(observation_, 2, 0)
+            action = agent.act(state_seq)
+            observation_, reward, terminal, _ = env.step(action)
+
+            reward = torch.Tensor([reward])
+
+            observation_ = process_image(observation_)
+            history.append(observation_)
+            state_seq_ = create_sequence(history)
+
             score += reward
             
             if not args.eval:
-                agent.remember(observation, action, reward, observation_, done)
-                if frames != 0 and frames % 4 == 0:
+                agent.remember(state_seq, action, reward, state_seq_, terminal)
+                if frame != 0 and frame % 4 == 0:
                     agent.learn()
 
-            observation = observation_
-            frames += 1
+            state_seq = state_seq_
+            frame += 1
    
         episodes += 1
+        frames += frame
         scores.append(score)
+        max_score = max(max_score, score)
         mean_score = np.mean(scores)
         mean_scores.append(mean_score)
         solved = mean_score > 40 and not args.eval
 
-        print(f"episode: {episodes} - mean_score: {round(mean_score,1)} - eps: {round(agent.epsilon,1)} - {time_stamp(time.time()-t)}   \r", end="")
+        print(f"episode: {episodes} - frames: {frames} - mean_score: {np.round(mean_score)} - max_score: {max_score.item()} - eps: {round(agent.epsilon,1)} - {time_stamp(time.time()-t)}      \r", end="")
     
-    print(f"\nepisodes to solve environment: {episodes} - highscore: {max(scores)} - {time_stamp(time.time()-t)}")
+    print(f"\nepisodes to solve environment: {episodes} - frames: {frames} - highscore: {max(scores)} - {time_stamp(time.time()-t)}")
 
     if args.save:
         agent.save_model(args.save)
@@ -70,14 +86,12 @@ def breakout(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Deep reinforcement learning for the Breakout-v0 environment from openai-gym.")
 
-    parser.add_argument('-r', '--render', help="Render the game screen.", action='store_true')
-    parser.add_argument('-ev', '--eval', help="Load and evaluate a model from the 'models/' folder.", type=str, default=None)
-    parser.add_argument('-s', '--save', help="Save the model under 'models/[name]' when it solves the environment. This argument takes a name for the model.", type=str, default=None)
-    parser.add_argument('-pl', '--plot', help="Plot the average rewards for each episode. This argument takes filename for the plot file.", type=str, default=None)
-    parser.add_argument('-cu', '--cuda', help="Whether to use cuda for the neural network.", action="store_true")
-    parser.add_argument('-max', '--maxgames', help="The maximum amount of games played before termination.", type=int, default=np.inf)
+    parser.add_argument('--render', help="Render the game screen.", action='store_true')
+    parser.add_argument('--eval', help="Load and evaluate a model from the 'models/' folder.", type=str, default=None)
+    parser.add_argument('--save', help="Save the model under 'models/[name]' when it solves the environment. This argument takes a name for the model.", type=str, default=None)
+    parser.add_argument('--plot', help="Plot the average rewards for each episode. This argument takes filename for the plot file.", type=str, default=None)
+    parser.add_argument('--cuda', help="Whether to use cuda for the neural network.", action="store_true")
+    parser.add_argument('--maxeps', help="The maximum amount of games played before termination.", type=int, default=np.inf)
 
     args = parser.parse_args()
     breakout(args)
-
-    

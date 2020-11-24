@@ -1,4 +1,5 @@
 from qnetwork import QNetwork
+from memory import MemoryReplay, Transition
 import numpy as np
 import torch
 import os
@@ -13,63 +14,49 @@ class Agent:
         self.n_actions = n_actions
         self.action_space = [i for i in range(self.n_actions)]
         self.batch_size = batch_size
-        self.mem_size = mem_size
-        self.mem_cntr = 0
 
-        self.state_memory = np.empty((self.mem_size, 3, 210, 160))
-        self.action_memory = np.empty(self.mem_size, dtype=np.int32)
-        self.reward_memory = np.empty(self.mem_size)
-        self.next_state_memory = np.empty((self.mem_size, 3, 210, 160))
-        self.done_memory = np.empty(self.mem_size, dtype=np.bool)
+        self.memory = MemoryReplay(mem_size=mem_size)
+        self.q_network = QNetwork(lr, 160, 160, self.n_actions, cuda)
 
-        self.q_network = QNetwork(lr, self.n_actions, cuda)
-
-    def remember(self, state, action, reward, next_state, done):
-        index = self.mem_cntr % self.mem_size
-        self.state_memory[index] = state
-        self.action_memory[index] = action
-        self.reward_memory[index] = reward
-        self.next_state_memory[index] = next_state
-        self.done_memory[index] = done
-        self.mem_cntr += 1
+    def remember(self, *args):
+        self.memory.add_memory(*args)
 
     def act(self, state):
         if np.random.random() < self.epsilon:
             return np.random.choice(self.action_space)
         
         state = torch.Tensor([state]).to(self.q_network.device)
-        actions = self.q_network(state)
+        with torch.no_grad():
+            actions = self.q_network(state)
         return torch.argmax(actions).item()
 
     def learn(self):
-        if self.mem_cntr < self.batch_size:
+        if len(self.memory) < self.batch_size:
             return
         
-        self.q_network.train()
+        batch = self.memory.get_batch(self.batch_size)
+        batch = Transition(*zip(*batch))
+        
+        state_batch = torch.Tensor(batch.state).to(self.q_network.device)
+        next_state_batch = torch.Tensor(batch.next_state).to(self.q_network.device)
+        reward_batch = torch.cat(batch.reward).to(self.q_network.device)
+
+        q_eval = self.q_network(state_batch)
+        
+        next_q_eval = self.q_network(next_state_batch)
+
+        target_q_value = reward_batch + self.gamma * torch.max(next_q_eval)
+        target_q_value[batch.terminal] = 0.0
+
+        target_q_eval = q_eval.clone()
+        target_q_eval[0][batch.action] = target_q_value
+
         self.q_network.optimizer.zero_grad()
-
-        max_mem = min(self.mem_cntr, self.mem_size)
-        batch = np.random.choice(max_mem, self.batch_size, replace=False)
-        batch_index = np.arange(self.batch_size)
-
-        state_batch = torch.Tensor(self.state_memory[batch]).to(self.q_network.device)
-        action_batch = self.action_memory[batch]
-        reward_batch = torch.Tensor(self.reward_memory[batch]).to(self.q_network.device)
-        next_state_batch = torch.Tensor(self.next_state_memory[batch]).to(self.q_network.device)
-        done_batch = torch.Tensor(self.done_memory[batch]).type(torch.BoolTensor).to(self.q_network.device)
-
-        q_eval = self.q_network(state_batch)[batch_index, action_batch]
-        q_eval_next = self.q_network(next_state_batch)
-        q_eval_next[done_batch] = 0.0
-
-        q_target = reward_batch + self.gamma * torch.max(q_eval_next, dim=1)[0]
-
-        loss = self.q_network.loss_function(q_target, q_eval).to(self.q_network.device)
+        loss = self.q_network.loss_function(target_q_eval, q_eval)
         loss.backward()
         self.q_network.optimizer.step()
 
         self.epsilon = max(self.epsilon - self.ep_decay, self.ep_min)
-        self.q_network.eval()
 
     def save_model(self, name):
         folder = "models/"
