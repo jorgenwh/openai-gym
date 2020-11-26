@@ -2,8 +2,9 @@ import matplotlib.pyplot as plt
 import time
 import datetime
 
-def plot_results(episodes, scores, filename):
+def plot_results(episodes, scores, filename, solved):
     plt.plot([i for i in range(episodes)], scores)
+    plt.plot([i for i in range(episodes)], [solved for _ in range(episodes)])
     plt.xlabel("episodes")
     plt.ylabel("scores")
     plt.savefig(filename)

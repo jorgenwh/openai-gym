@@ -12,13 +12,14 @@ class Agent:
         self.policy = PolicyNetwork(lr, n_actions, cuda)
 
     def act(self, observation):
-        observation = torch.Tensor(observation)
-        probabilities = F.softmax(self.policy(observation))
+        observation = torch.Tensor(observation).to(self.policy.device)
+        output = self.policy(observation)
+        probabilities = F.softmax(output, dim=0)
         action_probs = torch.distributions.Categorical(probabilities)
         action = action_probs.sample()
         log_probs = action_probs.log_prob(action)
         self.action_memory.append(log_probs)
-
+        
         return action.item()
 
     def push_reward(self, reward):
@@ -27,7 +28,7 @@ class Agent:
     def learn(self):
         self.policy.optimizer.zero_grad()
 
-        # calculate all returns
+        # calculate returns for each timestep
         G = np.zeros_like(self.reward_memory, dtype=np.float64)
         for t in range(len(self.reward_memory)):
             G_sum = 0
@@ -36,13 +37,6 @@ class Agent:
                 G_sum += self.reward_memory[k] * discount
                 discount *= self.gamma
             G[t] = G_sum
-
-        # normalize the returns
-        mean = np.mean(G)
-        std = np.std(G) if np.std(G) > 0 else 1
-        G = (G - mean) / std
-
-        G = torch.Tensor(G, dtype=torch.float).to(self.policy.device)
 
         loss = 0
         for g, logprob in zip(G, self.action_memory):
@@ -66,12 +60,11 @@ class Agent:
             filename = folder + name + str(i)
             i += 1
 
-        torch.save(self.q_network.state_dict(), filename)
+        torch.save(self.policy.state_dict(), filename)
 
     def load_model(self, name):
         folder = "models/"
         if not (os.path.exists(folder) or os.path.isfile(folder + name)):
             raise FileNotFoundError(f"Cannot find model '{folder + name}' when trying to load model.")
 
-        self.q_network.load_state_dict(torch.load(folder + name))
-        self.epsilon = self.ep_min = 0.0
+        self.policy.load_state_dict(torch.load(folder + name))

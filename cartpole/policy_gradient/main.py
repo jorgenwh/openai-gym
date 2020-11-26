@@ -15,13 +15,12 @@ def cartpole(args):
     if args.eval:
         agent.load_model(args.eval)
 
-    n_games = args.maxgames
     episodes = 0
     scores = []
     solved = False
     t = time.time()
 
-    while not solved and episodes < n_games:
+    for _ in range(args.maxeps):
         score = 0
         done = False
         observation = env.reset()
@@ -36,6 +35,8 @@ def cartpole(args):
             observation = observation_
             score += reward
 
+        if not args.eval:
+            agent.learn()
         episodes += 1
         scores.append(score)
         mean_score = np.mean(scores[-100:])
@@ -49,19 +50,19 @@ def cartpole(args):
         agent.save_model(args.save)
 
     if args.plot:
-        plot_results(episodes, scores, args.plot)
+        plot_results(episodes, scores, args.plot, 195)
 
     env.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Deep reinforcement learning for the CartPole-v1 environment from openai-gym.")
 
-    parser.add_argument('-r', '--render', help="Render the game screen.", action='store_true')
-    parser.add_argument('-ev', '--eval', help="Load and evaluate a model from the 'models/' folder.", type=str, default=None)
-    parser.add_argument('-s', '--save', help="Save the model under 'models/[name]' when it solves the environment. This argument takes a name for the model.", type=str, default=None)
-    parser.add_argument('-pl', '--plot', help="Plot the average rewards for each episode. This argument takes filename for the plot file.", type=str, default=None)
-    parser.add_argument('-cu', '--cuda', help="Whether to use cuda for the neural network.", action="store_true")
-    parser.add_argument('-max', '--maxgames', help="The maximum amount of games played before termination.", type=int, default=np.inf)
+    parser.add_argument('--render', help="Render the game screen.", action='store_true')
+    parser.add_argument('--eval', help="Load and evaluate a model from the 'models/' folder.", type=str, default=None)
+    parser.add_argument('--save', help="Save the model under 'models/[name]' when it solves the environment. This argument takes a name for the model.", type=str, default=None)
+    parser.add_argument('--plot', help="Plot the average rewards for each episode. This argument takes filename for the plot file.", type=str, default=None)
+    parser.add_argument('--cuda', help="Whether to use cuda for the neural network.", action="store_true")
+    parser.add_argument('--maxeps', help="The maximum amount of games played before termination.", type=int, default=np.inf)
 
     args = parser.parse_args()
     cartpole(args)
